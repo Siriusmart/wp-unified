@@ -51,6 +51,8 @@ export default class CopyProcessor extends webpan.Processor {
     }
 }
 
+export type UntypedProcessor = Processor<any, any, any, any, any>
+
 export abstract class WUnifiedPlugin {
-    abstract apply(processor: Processor, options: any): Processor
+    abstract apply(processor: UntypedProcessor, options: any): UntypedProcessor
 }
