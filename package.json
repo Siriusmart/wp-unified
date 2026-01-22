@@ -1,0 +1,29 @@
+{
+    "name": "wp-unified",
+    "version": "0.0.1",
+    "description": "UnifiedJS for Webpan",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "scripts": {
+        "build": "tsc"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/siriusmart/wp-unified.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "AGPL-3.0-only",
+    "type": "commonjs",
+    "bugs": {
+        "url": "https://github.com/siriusmart/wp-unified/issues"
+    },
+    "homepage": "https://github.com/siriusmart/wp-unified#readme",
+    "devDependencies": {
+        "@types/node": "^24.4.0"
+    },
+    "dependencies": {
+        "unified": "*",
+        "webpan": "*"
+    }
+}
