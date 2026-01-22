@@ -1,7 +1,7 @@
 {
     "name": "wp-unified",
     "version": "0.0.1",
-    "description": "UnifiedJS for Webpan",
+    "description": "UnifiedJS for webpan",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "scripts": {
