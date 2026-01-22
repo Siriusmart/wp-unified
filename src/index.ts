@@ -1,6 +1,31 @@
+import path = require("path")
 import webpan = require("webpan")
 import type { ProcessorOutputRaw } from "webpan/dist/types/processorStates";
 import { unified, Processor } from 'unified'
+
+function runRename(expr: string, pathToProccess: string) {
+    function ext(newExt: string) {
+        return (pathAny: string) => {
+            let parsed = path.parse(pathAny)
+            return path.format({
+                ext: newExt,
+                name: parsed.name,
+                dir: parsed.dir
+            })
+        }
+    }
+
+    let html = ext('html')
+
+    let f = eval(expr);
+
+    if (typeof f === "function")
+        return `${f(pathToProccess)}`
+    else {
+        console.warn(`"${expr}" cannot be used as a rename function`);
+        return pathToProccess
+    }
+}
 
 export default class CopyProcessor extends webpan.Processor {
     async build(content: Buffer | "dir"): Promise<ProcessorOutputRaw> {
@@ -44,9 +69,13 @@ export default class CopyProcessor extends webpan.Processor {
         }
 
         let vfile = await processor.process(content);
+        let outPath = this.filePath();
+
+        if (this.settings().rename !== undefined)
+            outPath = runRename(`${this.settings().rename}`, outPath)
 
         return {
-            relative: new Map([[this.filePath(), { buffer: vfile.value, priority: this.settings().priority ?? 0 }]]),
+            relative: new Map([[outPath, { buffer: vfile.value, priority: this.settings().priority ?? 0 }]]),
         }
     }
 }
