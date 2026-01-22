@@ -39,11 +39,11 @@ class CopyProcessor extends webpan.Processor {
                     break;
                 case "object":
                     if (Array.isArray(plugin) && plugin.length >= 1) {
-                        packageIdent = plugin[0];
+                        packageIdent = `${plugin[0]}`;
                         options = plugin.slice(1);
                     }
                     else if ("name" in plugin) {
-                        packageIdent = plugin.name;
+                        packageIdent = `${plugin.name}`;
                         options = plugin;
                     }
                     else
@@ -52,11 +52,19 @@ class CopyProcessor extends webpan.Processor {
                 default:
                     throw new Error(`Cannot tell which webpan+unified processor does "${JSON.stringify(plugin)}" refers to`);
             }
-            let foundClass = require(`wunified-${packageIdent}`).default;
-            if (typeof foundClass !== "function")
-                throw new Error(`Package ${packageIdent} doesn't seem to be a webpan+unified processor`);
-            let pluginObj = new foundClass();
-            processor = pluginObj.apply(processor, options);
+            if (packageIdent.startsWith("raw:")) {
+                let rawClass = require(packageIdent.slice(4)).default;
+                if (typeof rawClass !== "function")
+                    throw new Error(`Package ${packageIdent} doesn't seem to be a webpan+unified processor`);
+                processor = processor.use(rawClass, options);
+            }
+            else {
+                let foundClass = require(`wunified-${packageIdent}`).default;
+                if (typeof foundClass !== "function")
+                    throw new Error(`Package ${packageIdent} doesn't seem to be a webpan+unified processor`);
+                let pluginObj = new foundClass();
+                processor = pluginObj.apply(processor, options);
+            }
         }
         let vfile = await processor.process(content);
         let outPath = this.filePath();

@@ -35,7 +35,7 @@ export default class CopyProcessor extends webpan.Processor {
 
         for (const plugin of this.settings().stack ?? []) {
             let options;
-            let packageIdent;
+            let packageIdent: string;
 
             switch (typeof plugin) {
                 case "string":
@@ -44,10 +44,10 @@ export default class CopyProcessor extends webpan.Processor {
                     break;
                 case "object":
                     if (Array.isArray(plugin) && plugin.length >= 1) {
-                        packageIdent = plugin[0]
+                        packageIdent = `${plugin[0]}`
                         options = plugin.slice(1);
                     } else if ("name" in plugin) {
-                        packageIdent = plugin.name
+                        packageIdent = `${plugin.name}`
                         options = plugin
                     } else
                         throw new Error(`Cannot tell which webpan+unified processor does "${JSON.stringify(plugin)}" refers to`)
@@ -57,15 +57,26 @@ export default class CopyProcessor extends webpan.Processor {
                     throw new Error(`Cannot tell which webpan+unified processor does "${JSON.stringify(plugin)}" refers to`)
             }
 
-            let foundClass = require(`wunified-${packageIdent}`).default;
+            if (packageIdent.startsWith("raw:")) {
+                let rawClass = require(packageIdent.slice(4)).default;
 
-            if (typeof foundClass !== "function")
-                throw new Error(
-                    `Package ${packageIdent} doesn't seem to be a webpan+unified processor`
-                );
+                if (typeof rawClass !== "function")
+                    throw new Error(
+                        `Package ${packageIdent} doesn't seem to be a webpan+unified processor`
+                    );
 
-            let pluginObj: WUnifiedPlugin = new foundClass();
-            processor = pluginObj.apply(processor, options)
+                processor = processor.use(rawClass, options)
+            } else {
+                let foundClass = require(`wunified-${packageIdent}`).default;
+
+                if (typeof foundClass !== "function")
+                    throw new Error(
+                        `Package ${packageIdent} doesn't seem to be a webpan+unified processor`
+                    );
+
+                let pluginObj: WUnifiedPlugin = new foundClass();
+                processor = pluginObj.apply(processor, options)
+            }
         }
 
         let vfile = await processor.process(content);
