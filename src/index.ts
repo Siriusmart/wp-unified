@@ -27,11 +27,22 @@ function runRename(expr: string, pathToProccess: string) {
     }
 }
 
-export default class CopyProcessor extends webpan.Processor {
+interface UnifiedProcessorData {
+    pluginName: string;
+    pluginOption: any;
+    custom: Record<string, any>;
+}
+
+export default class UnifiedProcessor extends webpan.Processor {
+    public pluginResults: UnifiedProcessorData[] | null = null;
+
     async build(content: Buffer | "dir"): Promise<ProcessorOutputRaw> {
         if (content === "dir") return {}
 
         let processor = unified();
+
+        this.pluginResults = null;
+        let wipPluginResults: UnifiedProcessorData[] = []
 
         for (const plugin of this.settings().stack ?? []) {
             let options;
@@ -57,6 +68,14 @@ export default class CopyProcessor extends webpan.Processor {
                     throw new Error(`Cannot tell which webpan+unified processor does "${JSON.stringify(plugin)}" refers to`)
             }
 
+            let currentPluginResult = {
+                pluginName: packageIdent,
+                pluginOption: options,
+                custom: {}
+            };
+
+            wipPluginResults.push(currentPluginResult);
+
             if (packageIdent.startsWith("raw:")) {
                 let rawClass = require(packageIdent.slice(4)).default;
 
@@ -74,7 +93,7 @@ export default class CopyProcessor extends webpan.Processor {
                         `Package ${packageIdent} doesn't seem to be a webpan+unified processor`
                     );
 
-                let pluginObj: WUnifiedPlugin = new foundClass();
+                let pluginObj: WUnifiedPlugin = new foundClass(currentPluginResult);
                 processor = pluginObj.apply(processor, options)
             }
         }
@@ -85,6 +104,8 @@ export default class CopyProcessor extends webpan.Processor {
         if (this.settings().rename !== undefined)
             outPath = runRename(`${this.settings().rename}`, outPath)
 
+        this.pluginResults = wipPluginResults;
+
         return {
             relative: new Map([[outPath, { buffer: vfile.value, priority: this.settings().priority ?? 0 }]]),
         }
@@ -94,5 +115,11 @@ export default class CopyProcessor extends webpan.Processor {
 export type UntypedProcessor = Processor<any, any, any, any, any>
 
 export abstract class WUnifiedPlugin {
+    public result: Record<string, any>;
+
+    constructor(resultPtr: Record<string, any>) {
+        this.result = resultPtr
+    }
+
     abstract apply(processor: UntypedProcessor, options: any): UntypedProcessor
 }
