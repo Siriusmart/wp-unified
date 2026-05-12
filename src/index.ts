@@ -15,7 +15,8 @@ function runRename(expr: string, pathToProccess: string) {
         }
     }
 
-    let html = ext('html')
+    if (/^[a-z0-9]+$/i.test(expr))
+        expr = `ext("${expr}")`
 
     let f = eval(expr);
 
@@ -123,7 +124,7 @@ export default class UnifiedProcessor extends webpan.Processor {
 
         this.pluginResults = wipPluginResults;
 
-        let outPath = runRename(`${this.settings().target}`, this.filePath());
+        let outPath = runRename(`${this.settings().output}`, this.filePath());
 
         return {
             relative: new Map([[outPath, { buffer: vfile.value, priority: this.settings().priority ?? 0 }]]),
