@@ -2,6 +2,7 @@ import path = require("path")
 import webpan = require("webpan")
 import type { ProcessorOutputRaw } from "webpan/dist/types/processorStates";
 import { unified, Processor } from 'unified'
+import { VFile } from "vfile";
 
 function runRename(expr: string, pathToProccess: string) {
     function ext(newExt: string) {
@@ -117,7 +118,16 @@ export default class UnifiedProcessor extends webpan.Processor {
             }
         }
 
-        let vfile = await processor.process(content);
+        let hasCompiler = !!processor.freeze().compiler;
+
+        let vfile = null;
+        if (hasCompiler)
+            vfile = await processor.process(content)
+        else {
+            const file = new VFile({ value: content })
+            const tree = await processor.run(processor.parse(file), file)
+            file.result = tree
+        }
 
         if (this.settings().output === undefined)
             return {}
@@ -125,6 +135,9 @@ export default class UnifiedProcessor extends webpan.Processor {
         this.pluginResults = wipPluginResults;
 
         let outPath = runRename(`${this.settings().output}`, this.filePath());
+
+        if (vfile === null)
+            throw new Error(`outputs to ${outPath} but stack does not end in a string`)
 
         return {
             relative: new Map([[outPath, { buffer: vfile.value, priority: this.settings().priority ?? 0 }]]),

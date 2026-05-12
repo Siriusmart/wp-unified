@@ -1,6 +1,6 @@
 {
     "name": "wp-unified",
-    "version": "0.1.11",
+    "version": "0.1.12",
     "description": "UnifiedJS for webpan",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -25,6 +25,7 @@
     },
     "dependencies": {
         "unified": "^11.0.5",
+        "vfile": "^6.0.3",
         "webpan": "*"
     }
 }
