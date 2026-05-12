@@ -89,7 +89,7 @@ class UnifiedProcessor extends webpan.Processor {
             }
         }
         let vfile = await processor.process(content);
-        if (this.settings().rename === undefined)
+        if (this.settings().target === undefined)
             return {};
         this.pluginResults = wipPluginResults;
         let outPath = runRename(`${this.settings().target}`, this.filePath());

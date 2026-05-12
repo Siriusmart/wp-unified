@@ -118,7 +118,7 @@ export default class UnifiedProcessor extends webpan.Processor {
 
         let vfile = await processor.process(content);
 
-        if (this.settings().rename === undefined)
+        if (this.settings().target === undefined)
             return {}
 
         this.pluginResults = wipPluginResults;
