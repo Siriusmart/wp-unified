@@ -27,14 +27,29 @@ function runRename(expr: string, pathToProccess: string) {
     }
 }
 
-interface UnifiedProcessorData {
+interface UnifiedPluginData {
     pluginName: string;
-    pluginOption: any;
+    pluginOptions: any;
     custom: Record<string, any>;
+    snapshot?: any,
 }
 
 export default class UnifiedProcessor extends webpan.Processor {
-    public pluginResults: UnifiedProcessorData[] | null = null;
+    private pluginResults: UnifiedPluginData[] | null = null;
+
+    getResult(index: number): UnifiedPluginData | null {
+        if (this.pluginResults === null)
+            return null
+        else
+            return this.pluginResults[index] ?? null
+    }
+
+    getStackHeight(): number | null {
+        if (this.pluginResults === null)
+            return null
+        else
+            return this.pluginResults.length
+    }
 
     async build(content: Buffer | "dir"): Promise<ProcessorOutputRaw> {
         if (content === "dir") return {}
@@ -42,22 +57,19 @@ export default class UnifiedProcessor extends webpan.Processor {
         let processor = unified();
 
         this.pluginResults = null;
-        let wipPluginResults: UnifiedProcessorData[] = []
+        let wipPluginResults: UnifiedPluginData[] = []
 
         for (const plugin of this.settings().stack ?? []) {
-            let options;
+            let options: Record<string, any>;
             let packageIdent: string;
 
             switch (typeof plugin) {
                 case "string":
                     packageIdent = plugin;
-                    options = undefined;
+                    options = {};
                     break;
                 case "object":
-                    if (Array.isArray(plugin) && plugin.length >= 1) {
-                        packageIdent = `${plugin[0]}`
-                        options = plugin.slice(1);
-                    } else if ("name" in plugin) {
+                    if ("name" in plugin) {
                         packageIdent = `${plugin.name}`
                         options = plugin
                     } else
@@ -68,9 +80,9 @@ export default class UnifiedProcessor extends webpan.Processor {
                     throw new Error(`Cannot tell which webpan+unified processor does "${JSON.stringify(plugin)}" refers to`)
             }
 
-            let currentPluginResult = {
+            let currentPluginResult: UnifiedPluginData = {
                 pluginName: packageIdent,
-                pluginOption: options,
+                pluginOptions: options,
                 custom: {}
             };
 
@@ -95,6 +107,12 @@ export default class UnifiedProcessor extends webpan.Processor {
 
                 let pluginObj: WUnifiedPlugin = new foundClass(currentPluginResult);
                 processor = pluginObj.apply(processor, options)
+            }
+
+            if (options.snapshot === true) {
+                processor = processor.apply(() => (content: any) => {
+                    currentPluginResult.snapshot = structuredClone(content)
+                })
             }
         }
 
@@ -124,5 +142,5 @@ export abstract class WUnifiedPlugin {
         this.result = resultPtr
     }
 
-    abstract apply(processor: UntypedProcessor, options: any): UntypedProcessor
+    abstract apply(processor: UntypedProcessor, options: Record<string, any>): UntypedProcessor
 }

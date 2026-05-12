@@ -26,6 +26,18 @@ function runRename(expr, pathToProccess) {
 }
 class UnifiedProcessor extends webpan.Processor {
     pluginResults = null;
+    getResult(index) {
+        if (this.pluginResults === null)
+            return null;
+        else
+            return this.pluginResults[index] ?? null;
+    }
+    getStackHeight() {
+        if (this.pluginResults === null)
+            return null;
+        else
+            return this.pluginResults.length;
+    }
     async build(content) {
         if (content === "dir")
             return {};
@@ -38,14 +50,10 @@ class UnifiedProcessor extends webpan.Processor {
             switch (typeof plugin) {
                 case "string":
                     packageIdent = plugin;
-                    options = undefined;
+                    options = {};
                     break;
                 case "object":
-                    if (Array.isArray(plugin) && plugin.length >= 1) {
-                        packageIdent = `${plugin[0]}`;
-                        options = plugin.slice(1);
-                    }
-                    else if ("name" in plugin) {
+                    if ("name" in plugin) {
                         packageIdent = `${plugin.name}`;
                         options = plugin;
                     }
@@ -57,7 +65,7 @@ class UnifiedProcessor extends webpan.Processor {
             }
             let currentPluginResult = {
                 pluginName: packageIdent,
-                pluginOption: options,
+                pluginOptions: options,
                 custom: {}
             };
             wipPluginResults.push(currentPluginResult);
@@ -73,6 +81,11 @@ class UnifiedProcessor extends webpan.Processor {
                     throw new Error(`Package ${packageIdent} doesn't seem to be a webpan+unified processor`);
                 let pluginObj = new foundClass(currentPluginResult);
                 processor = pluginObj.apply(processor, options);
+            }
+            if (options.snapshot === true) {
+                processor = processor.apply(() => (content) => {
+                    currentPluginResult.snapshot = structuredClone(content);
+                });
             }
         }
         let vfile = await processor.process(content);
