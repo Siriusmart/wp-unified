@@ -117,15 +117,13 @@ export default class UnifiedProcessor extends webpan.Processor {
         }
 
         let vfile = await processor.process(content);
-        let outPath = this.filePath();
 
-        if (this.settings().rename !== undefined)
-            outPath = runRename(`${this.settings().rename}`, outPath)
+        if (this.settings().rename === undefined)
+            return {}
 
         this.pluginResults = wipPluginResults;
 
-        if (this.settings().nooutput === true)
-            return {};
+        let outPath = runRename(`${this.settings().target}`, this.filePath());
 
         return {
             relative: new Map([[outPath, { buffer: vfile.value, priority: this.settings().priority ?? 0 }]]),
