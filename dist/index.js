@@ -24,11 +24,14 @@ function runRename(expr, pathToProccess) {
         return pathToProccess;
     }
 }
-class CopyProcessor extends webpan.Processor {
+class UnifiedProcessor extends webpan.Processor {
+    pluginResults = null;
     async build(content) {
         if (content === "dir")
             return {};
         let processor = (0, unified_1.unified)();
+        this.pluginResults = null;
+        let wipPluginResults = [];
         for (const plugin of this.settings().stack ?? []) {
             let options;
             let packageIdent;
@@ -52,6 +55,12 @@ class CopyProcessor extends webpan.Processor {
                 default:
                     throw new Error(`Cannot tell which webpan+unified processor does "${JSON.stringify(plugin)}" refers to`);
             }
+            let currentPluginResult = {
+                pluginName: packageIdent,
+                pluginOption: options,
+                custom: {}
+            };
+            wipPluginResults.push(currentPluginResult);
             if (packageIdent.startsWith("raw:")) {
                 let rawClass = require(packageIdent.slice(4)).default;
                 if (typeof rawClass !== "function")
@@ -62,7 +71,7 @@ class CopyProcessor extends webpan.Processor {
                 let foundClass = require(`wunified-${packageIdent}`).default;
                 if (typeof foundClass !== "function")
                     throw new Error(`Package ${packageIdent} doesn't seem to be a webpan+unified processor`);
-                let pluginObj = new foundClass();
+                let pluginObj = new foundClass(currentPluginResult);
                 processor = pluginObj.apply(processor, options);
             }
         }
@@ -70,13 +79,20 @@ class CopyProcessor extends webpan.Processor {
         let outPath = this.filePath();
         if (this.settings().rename !== undefined)
             outPath = runRename(`${this.settings().rename}`, outPath);
+        this.pluginResults = wipPluginResults;
+        if (this.settings().nooutput === true)
+            return {};
         return {
             relative: new Map([[outPath, { buffer: vfile.value, priority: this.settings().priority ?? 0 }]]),
         };
     }
 }
-exports.default = CopyProcessor;
+exports.default = UnifiedProcessor;
 class WUnifiedPlugin {
+    result;
+    constructor(resultPtr) {
+        this.result = resultPtr;
+    }
 }
 exports.WUnifiedPlugin = WUnifiedPlugin;
 //# sourceMappingURL=index.js.map
