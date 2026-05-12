@@ -106,6 +106,9 @@ export default class UnifiedProcessor extends webpan.Processor {
 
         this.pluginResults = wipPluginResults;
 
+        if (this.settings().nooutput === true)
+            return {};
+
         return {
             relative: new Map([[outPath, { buffer: vfile.value, priority: this.settings().priority ?? 0 }]]),
         }
