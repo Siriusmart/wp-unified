@@ -81,7 +81,10 @@ class UnifiedProcessor extends webpan.Processor {
                 pluginName: packageIdent,
                 pluginOptions: options,
             };
-            let currentPluginResults = {};
+            let currentPluginResults = {
+                pluginName: packageIdent,
+                pluginOptions: options,
+            };
             if (packageIdent.startsWith("raw:")) {
                 let rawClass = require(packageIdent.slice(4)).default;
                 if (typeof rawClass !== "function")

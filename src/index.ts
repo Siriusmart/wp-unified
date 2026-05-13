@@ -40,8 +40,10 @@ interface UnifiedPluginResponse {
 }
 
 interface UnifiedPluginResult {
+    pluginName: string;
+    pluginOptions: any;
     result?: any;
-    snapshot?: any,
+    snapshot?: any;
 }
 
 export default class UnifiedProcessor extends webpan.Processor {
@@ -109,7 +111,10 @@ export default class UnifiedProcessor extends webpan.Processor {
                 pluginOptions: options,
             };
 
-            let currentPluginResults: UnifiedPluginResult = {};
+            let currentPluginResults: UnifiedPluginResult = {
+                pluginName: packageIdent,
+                pluginOptions: options,
+            };
 
             if (packageIdent.startsWith("raw:")) {
                 let rawClass = require(packageIdent.slice(4)).default;
