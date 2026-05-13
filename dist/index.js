@@ -83,20 +83,19 @@ class UnifiedProcessor extends webpan.Processor {
                 let rawClass = require(packageIdent.slice(4)).default;
                 if (typeof rawClass !== "function")
                     throw new Error(`Package ${packageIdent} doesn't seem to be a webpan+unified processor`);
-                processor = processor.use(rawClass, options);
+                processor.use(rawClass, options);
             }
             else {
                 let foundClass = require(`wunified-${packageIdent}`).default;
                 if (typeof foundClass !== "function")
                     throw new Error(`Package ${packageIdent} doesn't seem to be a webpan+unified processor`);
                 let pluginObj = new foundClass(currentPluginResult);
-                processor = pluginObj.apply(processor, options);
+                pluginObj.apply(processor, options);
             }
-            if (snapshot) {
-                processor = processor.use(() => (content) => {
+            if (snapshot)
+                processor.use(() => (content) => {
                     currentPluginResult.snapshot = structuredClone(content);
                 });
-            }
         }
         let hasCompiler = !!processor.freeze().compiler;
         let vfile = null;

@@ -108,7 +108,7 @@ export default class UnifiedProcessor extends webpan.Processor {
                         `Package ${packageIdent} doesn't seem to be a webpan+unified processor`
                     );
 
-                processor = processor.use(rawClass, options)
+                processor.use(rawClass, options)
             } else {
                 let foundClass = require(`wunified-${packageIdent}`).default;
 
@@ -118,14 +118,14 @@ export default class UnifiedProcessor extends webpan.Processor {
                     );
 
                 let pluginObj: WUnifiedPlugin = new foundClass(currentPluginResult);
-                processor = pluginObj.apply(processor, options)
+                pluginObj.apply(processor, options)
             }
 
-            if (snapshot) {
-                processor = processor.use(() => (content: any) => {
+            if (snapshot)
+                processor.use(() => (content: any) => {
                     currentPluginResult.snapshot = structuredClone(content)
                 })
-            }
+
         }
 
         let hasCompiler = !!processor.freeze().compiler;
@@ -167,5 +167,5 @@ export abstract class WUnifiedPlugin {
         this.data = dataPtr
     }
 
-    abstract apply(processor: UntypedProcessor, options: Record<string, any> | undefined): UntypedProcessor
+    abstract apply(processor: UntypedProcessor, options: Record<string, any> | undefined): void;
 }
