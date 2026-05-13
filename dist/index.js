@@ -119,9 +119,9 @@ class UnifiedProcessor extends webpan.Processor {
         let outPath = runRename(`${this.settings().output}`, this.filePath());
         if (vfile === null)
             throw new Error(`outputs to ${outPath} but stack does not end in a string`);
-        if (this.settings().snapshot === true)
+        if (this.settings().snapshot === true || this.settings().snapshot === "save")
             this.snapshot = vfile;
-        return {
+        let out = {
             relative: new Map([[outPath, { buffer: vfile.value, priority: this.settings().priority ?? 0 }]]),
             result: {
                 pluginResults: wipPluginResults.map((res, index) => {
@@ -132,6 +132,9 @@ class UnifiedProcessor extends webpan.Processor {
                 })
             }
         };
+        if (this.settings().snapshot === "save")
+            out.result.snapshot = vfile.value;
+        return out;
     }
 }
 exports.default = UnifiedProcessor;
