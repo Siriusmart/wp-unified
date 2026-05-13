@@ -71,12 +71,9 @@ export default class UnifiedProcessor extends webpan.Processor {
                     options = undefined;
                     break;
                 case "object":
-                    if (Array.isArray(plugin)) {
-                        packageIdent = `${plugin[0]}`
-                        options = plugin.slice(1)
-                    } else if ("name" in plugin) {
+                    if ("name" in plugin) {
                         packageIdent = `${plugin.name}`
-                        options = plugin
+                        options = plugin.options
                     } else
                         throw new Error(`Cannot tell which webpan+unified processor does "${JSON.stringify(plugin)}" refers to`)
 
