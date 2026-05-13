@@ -54,15 +54,18 @@ class UnifiedProcessor extends webpan.Processor {
         for (const plugin of this.settings().stack ?? []) {
             let options;
             let packageIdent;
+            let snapshot;
             switch (typeof plugin) {
                 case "string":
                     packageIdent = plugin;
                     options = undefined;
+                    snapshot = false;
                     break;
                 case "object":
                     if ("name" in plugin) {
                         packageIdent = `${plugin.name}`;
                         options = plugin.options;
+                        snapshot = plugin.snapshot ?? false;
                     }
                     else
                         throw new Error(`Cannot tell which webpan+unified processor does "${JSON.stringify(plugin)}" refers to`);
@@ -89,8 +92,8 @@ class UnifiedProcessor extends webpan.Processor {
                 let pluginObj = new foundClass(currentPluginResult);
                 processor = pluginObj.apply(processor, options);
             }
-            if (options !== undefined && options.snapshot === true) {
-                processor = processor.apply(() => (content) => {
+            if (snapshot) {
+                processor = processor.use(() => (content) => {
                     currentPluginResult.snapshot = structuredClone(content);
                 });
             }
@@ -119,9 +122,9 @@ class UnifiedProcessor extends webpan.Processor {
 }
 exports.default = UnifiedProcessor;
 class WUnifiedPlugin {
-    result;
-    constructor(resultPtr) {
-        this.result = resultPtr;
+    data;
+    constructor(dataPtr) {
+        this.data = dataPtr;
     }
 }
 exports.WUnifiedPlugin = WUnifiedPlugin;

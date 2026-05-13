@@ -65,21 +65,25 @@ export default class UnifiedProcessor extends webpan.Processor {
 
         this.pluginResults = null;
         this.snapshot = null;
+
         let wipPluginResults: UnifiedPluginData[] = []
 
         for (const plugin of this.settings().stack ?? []) {
             let options: Record<string, any> | undefined;
             let packageIdent: string;
+            let snapshot: boolean;
 
             switch (typeof plugin) {
                 case "string":
                     packageIdent = plugin;
                     options = undefined;
+                    snapshot = false;
                     break;
                 case "object":
                     if ("name" in plugin) {
                         packageIdent = `${plugin.name}`
                         options = plugin.options
+                        snapshot = plugin.snapshot ?? false;
                     } else
                         throw new Error(`Cannot tell which webpan+unified processor does "${JSON.stringify(plugin)}" refers to`)
 
@@ -117,8 +121,8 @@ export default class UnifiedProcessor extends webpan.Processor {
                 processor = pluginObj.apply(processor, options)
             }
 
-            if (options !== undefined && options.snapshot === true) {
-                processor = processor.apply(() => (content: any) => {
+            if (snapshot) {
+                processor = processor.use(() => (content: any) => {
                     currentPluginResult.snapshot = structuredClone(content)
                 })
             }
@@ -145,7 +149,7 @@ export default class UnifiedProcessor extends webpan.Processor {
         if (vfile === null)
             throw new Error(`outputs to ${outPath} but stack does not end in a string`)
 
-        if(this.settings().snapshot === true)
+        if (this.settings().snapshot === true)
             this.snapshot = vfile;
 
         return {
@@ -157,10 +161,10 @@ export default class UnifiedProcessor extends webpan.Processor {
 export type UntypedProcessor = Processor<any, any, any, any, any>
 
 export abstract class WUnifiedPlugin {
-    public result: Record<string, any>;
+    public data: Record<string, any>;
 
-    constructor(resultPtr: Record<string, any>) {
-        this.result = resultPtr
+    constructor(dataPtr: Record<string, any>) {
+        this.data = dataPtr
     }
 
     abstract apply(processor: UntypedProcessor, options: Record<string, any> | undefined): UntypedProcessor

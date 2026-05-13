@@ -18,8 +18,8 @@ export default class UnifiedProcessor extends webpan.Processor {
 }
 export type UntypedProcessor = Processor<any, any, any, any, any>;
 export declare abstract class WUnifiedPlugin {
-    result: Record<string, any>;
-    constructor(resultPtr: Record<string, any>);
+    data: Record<string, any>;
+    constructor(dataPtr: Record<string, any>);
     abstract apply(processor: UntypedProcessor, options: Record<string, any> | undefined): UntypedProcessor;
 }
 export {};
