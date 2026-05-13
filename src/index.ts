@@ -39,6 +39,11 @@ interface UnifiedPluginResponse {
     snapshot?: any,
 }
 
+interface UnifiedPluginResult {
+    result?: any;
+    snapshot?: any,
+}
+
 export default class UnifiedProcessor extends webpan.Processor {
     private pluginResponses: UnifiedPluginResponse[] | null = null;
     private snapshot: VFile | null = null;
@@ -69,12 +74,14 @@ export default class UnifiedProcessor extends webpan.Processor {
         this.pluginResponses = null;
         this.snapshot = null;
 
-        let wipPluginResults: UnifiedPluginResponse[] = []
+        let wipPluginResponses: UnifiedPluginResponse[] = []
+        let wipPluginResults: UnifiedPluginResult[] = []
 
         for (const plugin of this.settings().stack ?? []) {
             let options: Record<string, any> | undefined;
             let packageIdent: string;
             let snapshot: boolean;
+            let saveSnapshot: boolean;
 
             switch (typeof plugin) {
                 case "string":
@@ -86,7 +93,9 @@ export default class UnifiedProcessor extends webpan.Processor {
                     if ("name" in plugin) {
                         packageIdent = `${plugin.name}`
                         options = plugin.options
-                        snapshot = plugin.snapshot ?? false;
+                        snapshot = plugin.snapshot === true || plugin.snapshot === "save";
+                        if (plugin.snapshot === "save")
+                            saveSnapshot = true;
                     } else
                         throw new Error(`Cannot tell which webpan+unified processor does "${JSON.stringify(plugin)}" refers to`)
 
@@ -100,7 +109,7 @@ export default class UnifiedProcessor extends webpan.Processor {
                 pluginOptions: options,
             };
 
-            wipPluginResults.push(currentPluginResponse);
+            let currentPluginResults: UnifiedPluginResult = {};
 
             if (packageIdent.startsWith("raw:")) {
                 let rawClass = require(packageIdent.slice(4)).default;
@@ -123,9 +132,14 @@ export default class UnifiedProcessor extends webpan.Processor {
                 pluginObj.apply(processor, options)
             }
 
+            wipPluginResponses.push(currentPluginResponse);
+            wipPluginResults.push(currentPluginResults);
+
             if (snapshot)
                 processor.use(() => (content: any) => {
                     currentPluginResponse.snapshot = structuredClone(content)
+                    if (saveSnapshot)
+                        currentPluginResults.snapshot = currentPluginResponse
                 })
 
         }
@@ -144,7 +158,7 @@ export default class UnifiedProcessor extends webpan.Processor {
         if (this.settings().output === undefined)
             return {}
 
-        this.pluginResponses = wipPluginResults;
+        this.pluginResponses = wipPluginResponses;
 
         let outPath = runRename(`${this.settings().output}`, this.filePath());
 
@@ -157,7 +171,12 @@ export default class UnifiedProcessor extends webpan.Processor {
         return {
             relative: new Map([[outPath, { buffer: vfile.value, priority: this.settings().priority ?? 0 }]]),
             result: {
-                pluginResults: wipPluginResults.map(pl => pl.result)
+                pluginResults: wipPluginResults.map((res, index) => {
+                    return {
+                        snapshot: res.snapshot,
+                        result: wipPluginResponses[index]?.result
+                    }
+                })
             }
         }
     }

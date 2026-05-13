@@ -50,11 +50,13 @@ class UnifiedProcessor extends webpan.Processor {
         let processor = (0, unified_1.unified)();
         this.pluginResponses = null;
         this.snapshot = null;
+        let wipPluginResponses = [];
         let wipPluginResults = [];
         for (const plugin of this.settings().stack ?? []) {
             let options;
             let packageIdent;
             let snapshot;
+            let saveSnapshot;
             switch (typeof plugin) {
                 case "string":
                     packageIdent = plugin;
@@ -65,7 +67,9 @@ class UnifiedProcessor extends webpan.Processor {
                     if ("name" in plugin) {
                         packageIdent = `${plugin.name}`;
                         options = plugin.options;
-                        snapshot = plugin.snapshot ?? false;
+                        snapshot = plugin.snapshot === true || plugin.snapshot === "save";
+                        if (plugin.snapshot === "save")
+                            saveSnapshot = true;
                     }
                     else
                         throw new Error(`Cannot tell which webpan+unified processor does "${JSON.stringify(plugin)}" refers to`);
@@ -77,7 +81,7 @@ class UnifiedProcessor extends webpan.Processor {
                 pluginName: packageIdent,
                 pluginOptions: options,
             };
-            wipPluginResults.push(currentPluginResponse);
+            let currentPluginResults = {};
             if (packageIdent.startsWith("raw:")) {
                 let rawClass = require(packageIdent.slice(4)).default;
                 if (typeof rawClass !== "function")
@@ -91,9 +95,13 @@ class UnifiedProcessor extends webpan.Processor {
                 let pluginObj = new foundClass(currentPluginResponse);
                 pluginObj.apply(processor, options);
             }
+            wipPluginResponses.push(currentPluginResponse);
+            wipPluginResults.push(currentPluginResults);
             if (snapshot)
                 processor.use(() => (content) => {
                     currentPluginResponse.snapshot = structuredClone(content);
+                    if (saveSnapshot)
+                        currentPluginResults.snapshot = currentPluginResponse;
                 });
         }
         let hasCompiler = !!processor.freeze().compiler;
@@ -107,7 +115,7 @@ class UnifiedProcessor extends webpan.Processor {
         }
         if (this.settings().output === undefined)
             return {};
-        this.pluginResponses = wipPluginResults;
+        this.pluginResponses = wipPluginResponses;
         let outPath = runRename(`${this.settings().output}`, this.filePath());
         if (vfile === null)
             throw new Error(`outputs to ${outPath} but stack does not end in a string`);
@@ -116,7 +124,12 @@ class UnifiedProcessor extends webpan.Processor {
         return {
             relative: new Map([[outPath, { buffer: vfile.value, priority: this.settings().priority ?? 0 }]]),
             result: {
-                pluginResults: wipPluginResults.map(pl => pl.result)
+                pluginResults: wipPluginResults.map((res, index) => {
+                    return {
+                        snapshot: res.snapshot,
+                        result: wipPluginResponses[index]?.result
+                    };
+                })
             }
         };
     }
