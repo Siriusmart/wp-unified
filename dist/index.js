@@ -52,10 +52,14 @@ class UnifiedProcessor extends webpan.Processor {
             switch (typeof plugin) {
                 case "string":
                     packageIdent = plugin;
-                    options = {};
+                    options = undefined;
                     break;
                 case "object":
-                    if ("name" in plugin) {
+                    if (Array.isArray(plugin)) {
+                        packageIdent = `${plugin[0]}`;
+                        options = plugin.slice(1);
+                    }
+                    else if ("name" in plugin) {
                         packageIdent = `${plugin.name}`;
                         options = plugin;
                     }
@@ -84,7 +88,7 @@ class UnifiedProcessor extends webpan.Processor {
                 let pluginObj = new foundClass(currentPluginResult);
                 processor = pluginObj.apply(processor, options);
             }
-            if (options.snapshot === true) {
+            if (options !== undefined && options.snapshot === true) {
                 processor = processor.apply(() => (content) => {
                     currentPluginResult.snapshot = structuredClone(content);
                 });

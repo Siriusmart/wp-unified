@@ -62,16 +62,19 @@ export default class UnifiedProcessor extends webpan.Processor {
         let wipPluginResults: UnifiedPluginData[] = []
 
         for (const plugin of this.settings().stack ?? []) {
-            let options: Record<string, any>;
+            let options: Record<string, any> | undefined;
             let packageIdent: string;
 
             switch (typeof plugin) {
                 case "string":
                     packageIdent = plugin;
-                    options = {};
+                    options = undefined;
                     break;
                 case "object":
-                    if ("name" in plugin) {
+                    if (Array.isArray(plugin)) {
+                        packageIdent = `${plugin[0]}`
+                        options = plugin.slice(1)
+                    } else if ("name" in plugin) {
                         packageIdent = `${plugin.name}`
                         options = plugin
                     } else
@@ -111,7 +114,7 @@ export default class UnifiedProcessor extends webpan.Processor {
                 processor = pluginObj.apply(processor, options)
             }
 
-            if (options.snapshot === true) {
+            if (options !== undefined && options.snapshot === true) {
                 processor = processor.apply(() => (content: any) => {
                     currentPluginResult.snapshot = structuredClone(content)
                 })
@@ -154,5 +157,5 @@ export abstract class WUnifiedPlugin {
         this.result = resultPtr
     }
 
-    abstract apply(processor: UntypedProcessor, options: Record<string, any>): UntypedProcessor
+    abstract apply(processor: UntypedProcessor, options: Record<string, any> | undefined): UntypedProcessor
 }

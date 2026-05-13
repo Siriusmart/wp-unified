@@ -17,7 +17,7 @@ export type UntypedProcessor = Processor<any, any, any, any, any>;
 export declare abstract class WUnifiedPlugin {
     result: Record<string, any>;
     constructor(resultPtr: Record<string, any>);
-    abstract apply(processor: UntypedProcessor, options: Record<string, any>): UntypedProcessor;
+    abstract apply(processor: UntypedProcessor, options: Record<string, any> | undefined): UntypedProcessor;
 }
 export {};
 //# sourceMappingURL=index.d.ts.map
