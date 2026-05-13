@@ -128,10 +128,8 @@ class UnifiedProcessor extends webpan.Processor {
             relative: new Map([[outPath, { buffer: vfile.value, priority: this.settings().priority ?? 0 }]]),
             result: {
                 pluginResults: wipPluginResults.map((res, index) => {
-                    return {
-                        snapshot: res.snapshot,
-                        result: wipPluginResponses[index]?.result
-                    };
+                    res.result = wipPluginResponses[index]?.result;
+                    return res;
                 })
             }
         };
