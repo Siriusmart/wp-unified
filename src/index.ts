@@ -29,29 +29,32 @@ function runRename(expr: string, pathToProccess: string) {
     }
 }
 
-interface UnifiedPluginData {
+interface UnifiedPluginResponse {
     pluginName: string;
     pluginOptions: any;
-    custom: Record<string, any>;
+    // result will be saved to meta, must only contains json objects
+    result?: any;
+    // data will not be saved to meta
+    data?: any;
     snapshot?: any,
 }
 
 export default class UnifiedProcessor extends webpan.Processor {
-    private pluginResults: UnifiedPluginData[] | null = null;
+    private pluginResponses: UnifiedPluginResponse[] | null = null;
     private snapshot: VFile | null = null;
 
-    getResult(index: number): UnifiedPluginData | null {
-        if (this.pluginResults === null)
+    getResult(index: number): UnifiedPluginResponse | null {
+        if (this.pluginResponses === null)
             return null
         else
-            return this.pluginResults[index] ?? null
+            return this.pluginResponses[index] ?? null
     }
 
     getStackHeight(): number | null {
-        if (this.pluginResults === null)
+        if (this.pluginResponses === null)
             return null
         else
-            return this.pluginResults.length
+            return this.pluginResponses.length
     }
 
     getSnapshot(): VFile | null {
@@ -63,10 +66,10 @@ export default class UnifiedProcessor extends webpan.Processor {
 
         let processor = unified();
 
-        this.pluginResults = null;
+        this.pluginResponses = null;
         this.snapshot = null;
 
-        let wipPluginResults: UnifiedPluginData[] = []
+        let wipPluginResults: UnifiedPluginResponse[] = []
 
         for (const plugin of this.settings().stack ?? []) {
             let options: Record<string, any> | undefined;
@@ -92,13 +95,12 @@ export default class UnifiedProcessor extends webpan.Processor {
                     throw new Error(`Cannot tell which webpan+unified processor does "${JSON.stringify(plugin)}" refers to`)
             }
 
-            let currentPluginResult: UnifiedPluginData = {
+            let currentPluginResponse: UnifiedPluginResponse = {
                 pluginName: packageIdent,
                 pluginOptions: options,
-                custom: {}
             };
 
-            wipPluginResults.push(currentPluginResult);
+            wipPluginResults.push(currentPluginResponse);
 
             if (packageIdent.startsWith("raw:")) {
                 let rawClass = require(packageIdent.slice(4)).default;
@@ -117,13 +119,13 @@ export default class UnifiedProcessor extends webpan.Processor {
                         `Package ${packageIdent} doesn't seem to be a webpan+unified processor`
                     );
 
-                let pluginObj: WUnifiedPlugin = new foundClass(currentPluginResult);
+                let pluginObj: WUnifiedPlugin = new foundClass(currentPluginResponse);
                 pluginObj.apply(processor, options)
             }
 
             if (snapshot)
                 processor.use(() => (content: any) => {
-                    currentPluginResult.snapshot = structuredClone(content)
+                    currentPluginResponse.snapshot = structuredClone(content)
                 })
 
         }
@@ -142,7 +144,7 @@ export default class UnifiedProcessor extends webpan.Processor {
         if (this.settings().output === undefined)
             return {}
 
-        this.pluginResults = wipPluginResults;
+        this.pluginResponses = wipPluginResults;
 
         let outPath = runRename(`${this.settings().output}`, this.filePath());
 
@@ -154,6 +156,9 @@ export default class UnifiedProcessor extends webpan.Processor {
 
         return {
             relative: new Map([[outPath, { buffer: vfile.value, priority: this.settings().priority ?? 0 }]]),
+            result: {
+                pluginResults: wipPluginResults.map(pl => pl.result)
+            }
         }
     }
 }
@@ -161,10 +166,18 @@ export default class UnifiedProcessor extends webpan.Processor {
 export type UntypedProcessor = Processor<any, any, any, any, any>
 
 export abstract class WUnifiedPlugin {
-    public data: Record<string, any>;
+    private response: UnifiedPluginResponse;
 
-    constructor(dataPtr: Record<string, any>) {
-        this.data = dataPtr
+    constructor(dataPtr: UnifiedPluginResponse) {
+        this.response = dataPtr
+    }
+
+    setData(data: any) {
+        this.response.data = data;
+    }
+
+    setResult(data: any) {
+        this.response.result = data;
     }
 
     abstract apply(processor: UntypedProcessor, options: Record<string, any> | undefined): void;

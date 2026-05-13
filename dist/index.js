@@ -27,19 +27,19 @@ function runRename(expr, pathToProccess) {
     }
 }
 class UnifiedProcessor extends webpan.Processor {
-    pluginResults = null;
+    pluginResponses = null;
     snapshot = null;
     getResult(index) {
-        if (this.pluginResults === null)
+        if (this.pluginResponses === null)
             return null;
         else
-            return this.pluginResults[index] ?? null;
+            return this.pluginResponses[index] ?? null;
     }
     getStackHeight() {
-        if (this.pluginResults === null)
+        if (this.pluginResponses === null)
             return null;
         else
-            return this.pluginResults.length;
+            return this.pluginResponses.length;
     }
     getSnapshot() {
         return this.snapshot;
@@ -48,7 +48,7 @@ class UnifiedProcessor extends webpan.Processor {
         if (content === "dir")
             return {};
         let processor = (0, unified_1.unified)();
-        this.pluginResults = null;
+        this.pluginResponses = null;
         this.snapshot = null;
         let wipPluginResults = [];
         for (const plugin of this.settings().stack ?? []) {
@@ -73,12 +73,11 @@ class UnifiedProcessor extends webpan.Processor {
                 default:
                     throw new Error(`Cannot tell which webpan+unified processor does "${JSON.stringify(plugin)}" refers to`);
             }
-            let currentPluginResult = {
+            let currentPluginResponse = {
                 pluginName: packageIdent,
                 pluginOptions: options,
-                custom: {}
             };
-            wipPluginResults.push(currentPluginResult);
+            wipPluginResults.push(currentPluginResponse);
             if (packageIdent.startsWith("raw:")) {
                 let rawClass = require(packageIdent.slice(4)).default;
                 if (typeof rawClass !== "function")
@@ -89,12 +88,12 @@ class UnifiedProcessor extends webpan.Processor {
                 let foundClass = require(`wunified-${packageIdent}`).default;
                 if (typeof foundClass !== "function")
                     throw new Error(`Package ${packageIdent} doesn't seem to be a webpan+unified processor`);
-                let pluginObj = new foundClass(currentPluginResult);
+                let pluginObj = new foundClass(currentPluginResponse);
                 pluginObj.apply(processor, options);
             }
             if (snapshot)
                 processor.use(() => (content) => {
-                    currentPluginResult.snapshot = structuredClone(content);
+                    currentPluginResponse.snapshot = structuredClone(content);
                 });
         }
         let hasCompiler = !!processor.freeze().compiler;
@@ -108,7 +107,7 @@ class UnifiedProcessor extends webpan.Processor {
         }
         if (this.settings().output === undefined)
             return {};
-        this.pluginResults = wipPluginResults;
+        this.pluginResponses = wipPluginResults;
         let outPath = runRename(`${this.settings().output}`, this.filePath());
         if (vfile === null)
             throw new Error(`outputs to ${outPath} but stack does not end in a string`);
@@ -116,14 +115,23 @@ class UnifiedProcessor extends webpan.Processor {
             this.snapshot = vfile;
         return {
             relative: new Map([[outPath, { buffer: vfile.value, priority: this.settings().priority ?? 0 }]]),
+            result: {
+                pluginResults: wipPluginResults.map(pl => pl.result)
+            }
         };
     }
 }
 exports.default = UnifiedProcessor;
 class WUnifiedPlugin {
-    data;
+    response;
     constructor(dataPtr) {
-        this.data = dataPtr;
+        this.response = dataPtr;
+    }
+    setData(data) {
+        this.response.data = data;
+    }
+    setResult(data) {
+        this.response.result = data;
     }
 }
 exports.WUnifiedPlugin = WUnifiedPlugin;

@@ -2,24 +2,27 @@ import webpan = require("webpan");
 import type { ProcessorOutputRaw } from "webpan/dist/types/processorStates";
 import { Processor } from 'unified';
 import { VFile } from "vfile";
-interface UnifiedPluginData {
+interface UnifiedPluginResponse {
     pluginName: string;
     pluginOptions: any;
-    custom: Record<string, any>;
+    result?: any;
+    data?: any;
     snapshot?: any;
 }
 export default class UnifiedProcessor extends webpan.Processor {
-    private pluginResults;
+    private pluginResponses;
     private snapshot;
-    getResult(index: number): UnifiedPluginData | null;
+    getResult(index: number): UnifiedPluginResponse | null;
     getStackHeight(): number | null;
     getSnapshot(): VFile | null;
     build(content: Buffer | "dir"): Promise<ProcessorOutputRaw>;
 }
 export type UntypedProcessor = Processor<any, any, any, any, any>;
 export declare abstract class WUnifiedPlugin {
-    data: Record<string, any>;
-    constructor(dataPtr: Record<string, any>);
+    private response;
+    constructor(dataPtr: UnifiedPluginResponse);
+    setData(data: any): void;
+    setResult(data: any): void;
     abstract apply(processor: UntypedProcessor, options: Record<string, any> | undefined): void;
 }
 export {};
