@@ -38,6 +38,7 @@ interface UnifiedPluginData {
 
 export default class UnifiedProcessor extends webpan.Processor {
     private pluginResults: UnifiedPluginData[] | null = null;
+    private snapshot: VFile | null = null;
 
     getResult(index: number): UnifiedPluginData | null {
         if (this.pluginResults === null)
@@ -53,12 +54,17 @@ export default class UnifiedProcessor extends webpan.Processor {
             return this.pluginResults.length
     }
 
+    getSnapshot(): VFile | null {
+        return this.snapshot;
+    }
+
     async build(content: Buffer | "dir"): Promise<ProcessorOutputRaw> {
         if (content === "dir") return {}
 
         let processor = unified();
 
         this.pluginResults = null;
+        this.snapshot = null;
         let wipPluginResults: UnifiedPluginData[] = []
 
         for (const plugin of this.settings().stack ?? []) {
@@ -120,7 +126,7 @@ export default class UnifiedProcessor extends webpan.Processor {
 
         let hasCompiler = !!processor.freeze().compiler;
 
-        let vfile = null;
+        let vfile: VFile | null = null;
         if (hasCompiler)
             vfile = await processor.process(content)
         else {
@@ -138,6 +144,9 @@ export default class UnifiedProcessor extends webpan.Processor {
 
         if (vfile === null)
             throw new Error(`outputs to ${outPath} but stack does not end in a string`)
+
+        if(this.settings().snapshot === true)
+            this.snapshot = vfile;
 
         return {
             relative: new Map([[outPath, { buffer: vfile.value, priority: this.settings().priority ?? 0 }]]),

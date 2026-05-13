@@ -28,6 +28,7 @@ function runRename(expr, pathToProccess) {
 }
 class UnifiedProcessor extends webpan.Processor {
     pluginResults = null;
+    snapshot = null;
     getResult(index) {
         if (this.pluginResults === null)
             return null;
@@ -40,11 +41,15 @@ class UnifiedProcessor extends webpan.Processor {
         else
             return this.pluginResults.length;
     }
+    getSnapshot() {
+        return this.snapshot;
+    }
     async build(content) {
         if (content === "dir")
             return {};
         let processor = (0, unified_1.unified)();
         this.pluginResults = null;
+        this.snapshot = null;
         let wipPluginResults = [];
         for (const plugin of this.settings().stack ?? []) {
             let options;
@@ -105,6 +110,8 @@ class UnifiedProcessor extends webpan.Processor {
         let outPath = runRename(`${this.settings().output}`, this.filePath());
         if (vfile === null)
             throw new Error(`outputs to ${outPath} but stack does not end in a string`);
+        if (this.settings().snapshot === true)
+            this.snapshot = vfile;
         return {
             relative: new Map([[outPath, { buffer: vfile.value, priority: this.settings().priority ?? 0 }]]),
         };

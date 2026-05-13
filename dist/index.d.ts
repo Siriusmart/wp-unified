@@ -1,6 +1,7 @@
 import webpan = require("webpan");
 import type { ProcessorOutputRaw } from "webpan/dist/types/processorStates";
 import { Processor } from 'unified';
+import { VFile } from "vfile";
 interface UnifiedPluginData {
     pluginName: string;
     pluginOptions: any;
@@ -9,8 +10,10 @@ interface UnifiedPluginData {
 }
 export default class UnifiedProcessor extends webpan.Processor {
     private pluginResults;
+    private snapshot;
     getResult(index: number): UnifiedPluginData | null;
     getStackHeight(): number | null;
+    getSnapshot(): VFile | null;
     build(content: Buffer | "dir"): Promise<ProcessorOutputRaw>;
 }
 export type UntypedProcessor = Processor<any, any, any, any, any>;
