@@ -4,7 +4,7 @@ import type { ProcessorOutputRaw } from "webpan/dist/types/processorStates";
 import { unified, Processor } from 'unified'
 import { VFile } from "vfile";
 
-export function runRename(expr: string, pathToProccess: string) {
+function runRename(expr: string, pathToProccess: string) {
     function ext(newExt: string) {
         return (pathAny: string) => {
             let parsed = path.parse(pathAny)

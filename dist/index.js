@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WUnifiedPlugin = void 0;
-exports.runRename = runRename;
 const path = require("path");
 const webpan = require("webpan");
 const unified_1 = require("unified");
