@@ -2,6 +2,7 @@ import webpan = require("webpan");
 import type { ProcessorOutputRaw } from "webpan/dist/types/processorStates";
 import { Processor } from 'unified';
 import { VFile } from "vfile";
+export declare function runRename(expr: string, pathToProccess: string): string;
 interface UnifiedPluginResponse {
     pluginName: string;
     pluginOptions: any;
